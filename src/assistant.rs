@@ -60,7 +60,7 @@ pub fn understand_request(options: &AssistantOptions) -> Result<AssistantPlan> {
         &mut matches,
         &text,
         PlannedStep::Mosaic,
-        &["马赛克", "打码", "隐私", "匿名", "遮脸", "模糊人脸"],
+        &["马赛克", "打码", "隐私", "匿名", "遮脸", "模糊人脸", "打个码", "遮个脸"],
     );
     collect_intent(
         &mut matches,
