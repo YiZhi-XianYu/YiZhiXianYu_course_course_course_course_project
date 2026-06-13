@@ -1,8 +1,23 @@
-# subtitle-burner
+# 小型视频处理流水线
 
-`subtitle-burner` 是一个使用 Rust 编写的小型视频处理流水线 CLI 工具，用于将 `.srt` 字幕硬编码烧录到视频画面中，输出带字幕的新视频文件。
+这是一个使用 Rust 编写的小型视频处理流水线 CLI 工具，用于将 `.srt` 字幕硬编码烧录到视频画面中，输出带字幕的新视频文件。
 
 这是 Rust 课程期末作业的单人项目，重点展示模块化设计、错误处理、结构体与枚举、trait 风格接口拆分、所有权与借用、以及基于线程和 channel 的三阶段流水线。
+
+## 运行方式：
+
+```powershell
+cargo build --release
+node html\server.js
+```
+
+然后打开：
+
+```
+http://127.0.0.1:8787
+```
+
+注意：普通浏览器拖拽文件通常拿不到完整本地路径，所以页面会预览视频，但后端可能只收到文件名。最稳的方式是拖入后手动确认“输入视频路径”是完整路径，或者把视频放在项目目录下。
 
 ## 功能
 
@@ -42,7 +57,7 @@ tools/whisper/Release/whisper-cli.exe
 models/ggml-small.bin
 ```
 
-这两个目录体积较大，已加入 `.gitignore`，提交课程源码时不建议一并打包。当前机器上已经按上述路径放置了 whisper.cpp Windows x64 工具和 `ggml-small.bin` 模型。
+这两个目录体积较大，已加入 `.gitignore`。当前机器上已经按上述路径放置了 whisper.cpp Windows x64 工具和 `ggml-small.bin` 模型。
 
 ## 编译
 
@@ -178,18 +193,6 @@ Options:
 ```text
 错误: 未找到 ffmpeg 可执行文件。请先安装 FFmpeg，并确认 ffmpeg 已加入 PATH
 ```
-
-## 演示建议
-
-演示视频控制在 5 分钟以内，可以按以下顺序录制：
-
-1. 展示项目目录结构和 README
-2. 运行 `cargo test`
-3. 运行 `cargo run -- --help`
-4. 运行 `cargo run -- --input input.mp4 --subtitle tests/test.srt --output output.mp4 --dry-run`
-5. 运行 `cargo run -- --input input.mp4 --output output.mp4 --auto-subtitle --dry-run`
-6. 若本机安装 FFmpeg，运行真实烧录命令并展示输出视频
-7. 简要讲解 `Decoder -> Renderer -> Encoder` 三阶段流水线，以及自动字幕中的 ASR 子流程
 
 ## 备注
 

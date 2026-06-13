@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>异世界相机 - Isekai Camera</title>
+    <style>
+        :root {
+            --transition-speed: 0.8s;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            color: #263238;
+            transition: color var(--transition-speed), background var(--transition-speed);
+            background: linear-gradient(-45deg, #8ec5fc, #c4a4e8, #ffafbd, #ffc3a0, #f6e27a, #95e1d3, #8bd3dd, #a6c1ee);
+            background-size: 800% 800%;
+            animation: fluidGradient 60s ease-in-out infinite;
+        }
+
+        body.night-mode {
+            color: #e2e8f0;
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #3b0764, #064e3b, #0f766e, #111827);
+            background-size: 800% 800%;
+        }
+
+        @keyframes fluidGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #fff;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            text-align: center;
+            font-weight: 650;
+            letter-spacing: 0;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 15px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.08) rotate(12deg);
+        }
+
+        body.night-mode .theme-toggle {
+            background: rgba(15, 23, 42, 0.65);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 20px;
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.46);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.52);
+            border-radius: 20px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.12);
+            transition: all var(--transition-speed);
+            min-height: 0;
+        }
+
+        body.night-mode .glass-panel {
+            background: rgba(15, 23, 42, 0.56);
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.38);
+        }
+
+        .video-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.55);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            aspect-ratio: 16 / 9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.62);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+            transition: all var(--transition-speed);
+        }
+
+        body.night-mode .video-container {
+            background: rgba(0, 0, 0, 0.42);
+            border-color: rgba(255,255,255,0.08);
+            box-shadow: inset 0 2px 20px rgba(0,0,0,0.5);
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: none;
+            background: #000;
+        }
+
+        .video-placeholder {
+            color: #607d8b;
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            transition: color var(--transition-speed);
+        }
+
+        body.night-mode .video-placeholder {
+            color: #94a3b8;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 650;
+            transition: color var(--transition-speed);
+        }
+
+        body.night-mode label {
+            color: #cbd5e1;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.62);
+            border: 1px solid rgba(255, 255, 255, 0.82);
+            border-radius: 10px;
+            color: #263238;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            min-width: 0;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 0 0 3px rgba(142, 197, 252, 0.42);
+        }
+
+        body.night-mode input[type="text"] {
+            background: rgba(0, 0, 0, 0.34);
+            border-color: rgba(255, 255, 255, 0.14);
+            color: #f8fafc;
+        }
+
+        .drop-zone {
+            border: 2px dashed rgba(97, 132, 255, 0.75);
+            padding: 14px;
+            text-align: center;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.32);
+            font-size: 13px;
+            color: #3f51b5;
+            transition: all 0.3s;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .drop-zone.dragover,
+        .video-container.dragover,
+        .chat-area.dragover {
+            background: rgba(142, 197, 252, 0.34);
+            border-color: #3f51b5;
+            transform: scale(1.01);
+        }
+
+        body.night-mode .drop-zone {
+            border-color: rgba(139, 92, 246, 0.55);
+            background: rgba(0, 0, 0, 0.22);
+            color: #c4b5fd;
+        }
+
+        .chat-area {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.52);
+            border-radius: 12px;
+            padding: 15px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.62);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 40vh;
+            min-height: 180px;
+            transition: all var(--transition-speed);
+        }
+
+        body.night-mode .chat-area {
+            background: rgba(0, 0, 0, 0.28);
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .chat-message {
+            padding: 10px 14px;
+            border-radius: 12px;
+            max-width: 85%;
+            font-size: 14px;
+            line-height: 1.5;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            overflow-wrap: anywhere;
+        }
+
+        .ai-msg {
+            background: #fff;
+            color: #263238;
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        body.night-mode .ai-msg {
+            background: rgba(30, 41, 59, 0.88);
+            color: #e2e8f0;
+        }
+
+        .user-msg {
+            background: linear-gradient(135deg, #7bb7f4, #b38be2);
+            color: #fff;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        body.night-mode .user-msg {
+            background: linear-gradient(135deg, #6d28d9, #4f46e5);
+        }
+
+        .chat-input-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #7bb7f4, #b38be2);
+            color: white;
+            border: none;
+            padding: 0 22px;
+            border-radius: 10px;
+            font-weight: 650;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, background var(--transition-speed), opacity 0.2s;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(179, 139, 226, 0.38);
+        }
+
+        button:disabled {
+            opacity: 0.58;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        body.night-mode button {
+            background: linear-gradient(135deg, #7c3aed, #4f46e5);
+        }
+
+        .log-area {
+            flex: 0.8;
+            background: rgba(30, 30, 46, 0.88);
+            border-radius: 12px;
+            font-family: Consolas, "Courier New", monospace;
+            padding: 15px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            color: #a6e3a1;
+            font-size: 12px;
+            line-height: 1.6;
+            border: 1px solid rgba(0,0,0,0.22);
+            min-height: 180px;
+            transition: background var(--transition-speed);
+        }
+
+        body.night-mode .log-area {
+            background: rgba(9, 9, 11, 0.9);
+            border-color: rgba(255,255,255,0.08);
+        }
+
+        .log-system {
+            color: #89b4fa;
+        }
+
+        .log-error {
+            color: #f38ba8;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 14px;
+            }
+
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+
+            .theme-toggle {
+                position: static;
+                align-self: flex-end;
+                margin-bottom: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="切换昼夜模式">☀️</button>
+    <h2>✨ Isekai Camera Agent ✨</h2>
+
+    <div class="main-container">
+        <div class="glass-panel">
+            <div class="video-container" id="video-drop-zone">
+                <div class="video-placeholder" id="video-placeholder">
+                    <span style="font-size: 32px;">🎬</span>
+                    <span>将视频拖拽至此进行预览</span>
+                </div>
+                <video id="main-video" controls autoplay loop></video>
+            </div>
+
+            <div class="form-group">
+                <label>输入视频路径 (Input Path)</label>
+                <input type="text" id="input-path" placeholder="拖拽文件或手动输入绝对路径...">
+                <div class="drop-zone" id="input-drop">拖拽 .mp4 文件至此自动填入路径</div>
+            </div>
+
+            <div class="form-group">
+                <label>输出视频路径 (Output Path)</label>
+                <input type="text" id="output-name" placeholder="留空则在项目目录生成带时间戳的视频">
+            </div>
+        </div>
+
+        <div class="glass-panel">
+            <label>💬 Agent 语义交互区</label>
+            <div class="chat-area" id="chat-box">
+                <div class="chat-message ai-msg">你好，我是异世界相机助手。请告诉我想怎么处理视频，例如：自动加字幕、先打码再让蜡笔小新趴在头顶、打码后烧录字幕。</div>
+            </div>
+
+            <div class="chat-input-box">
+                <input type="text" id="chat-input" placeholder="输入自然语言指令...">
+                <button id="send-btn" onclick="sendIntent()">⚡ 发送需求</button>
+            </div>
+
+            <label>📟 运行终端 (Pipeline Logs)</label>
+            <div class="log-area" id="log-box"><span class="log-system">[System] Engine initialized. Waiting for intent...</span>
+</div>
+        </div>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('theme-btn');
+            body.classList.toggle('night-mode');
+            btn.textContent = body.classList.contains('night-mode') ? '🌙' : '☀️';
+        }
+
+        const inputPath = document.getElementById('input-path');
+        const outputName = document.getElementById('output-name');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatBox = document.getElementById('chat-box');
+        const logBox = document.getElementById('log-box');
+        const videoPlayer = document.getElementById('main-video');
+        const videoPlaceholder = document.getElementById('video-placeholder');
+
+        let currentEventSource = null;
+        let currentObjectUrl = null;
+
+        function setupFileDrop(elementId, isVideoZone = false) {
+            const el = document.getElementById(elementId);
+            el.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                el.classList.add('dragover');
+            });
+            el.addEventListener('dragleave', () => el.classList.remove('dragover'));
+            el.addEventListener('drop', (event) => {
+                event.preventDefault();
+                el.classList.remove('dragover');
+                const file = event.dataTransfer.files[0];
+
+                if (file && file.name.toLowerCase().endsWith('.mp4')) {
+                    handleFileLoaded(file);
+                    if (!isVideoZone && !chatInput.value.trim()) {
+                        chatInput.value = `处理视频 ${file.name}`;
+                    }
+                    return;
+                }
+
+                appendChatMessage('请拖入 .mp4 格式的视频文件。', 'ai', true);
+            });
+        }
+
+        function handleFileLoaded(file) {
+            const browserPath = file.path || file.name;
+            inputPath.value = browserPath;
+            outputName.value = buildDefaultOutputPath(browserPath);
+
+            if (currentObjectUrl) {
+                URL.revokeObjectURL(currentObjectUrl);
+            }
+            currentObjectUrl = URL.createObjectURL(file);
+            setVideoPreview(currentObjectUrl);
+
+            addLog(`[browser] loaded video preview: ${file.name}`, 'system');
+            if (!file.path) {
+                addLog('[browser] 浏览器无法读取完整本地路径；如果后端找不到视频，请手动填写绝对路径，或把视频放在项目目录。', 'system');
+            }
+        }
+
+        function buildDefaultOutputPath(input) {
+            const stamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+            const normalized = input.replace(/\//g, '\\');
+            const slash = normalized.lastIndexOf('\\');
+            const dir = slash >= 0 ? normalized.slice(0, slash + 1) : '.\\';
+            const file = slash >= 0 ? normalized.slice(slash + 1) : normalized;
+            const stem = file.replace(/\.[^.]+$/, '') || 'output';
+            return `${dir}${stem}_web_${stamp}.mp4`;
+        }
+
+        function setVideoPreview(src) {
+            videoPlaceholder.style.display = 'none';
+            videoPlayer.style.display = 'block';
+            videoPlayer.src = src;
+            videoPlayer.load();
+            videoPlayer.play().catch(() => {});
+        }
+
+        function addLog(text, type = '') {
+            const line = document.createElement('span');
+            if (type === 'system') line.className = 'log-system';
+            if (type === 'error') line.className = 'log-error';
+            line.textContent = text;
+            logBox.appendChild(line);
+            logBox.appendChild(document.createTextNode('\n'));
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function appendChatMessage(text, role = 'ai', isError = false) {
+            const message = document.createElement('div');
+            message.className = `chat-message ${role === 'user' ? 'user-msg' : 'ai-msg'}`;
+            if (isError) {
+                message.style.color = '#b00020';
+            }
+            message.textContent = text;
+            chatBox.appendChild(message);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function setRunning(running) {
+            sendBtn.disabled = running;
+            sendBtn.textContent = running ? '处理中...' : '⚡ 发送需求';
+        }
+
+        function closeCurrentEventSource() {
+            if (currentEventSource) {
+                currentEventSource.close();
+                currentEventSource = null;
+            }
+        }
+
+        async function sendIntent() {
+            const request = chatInput.value.trim();
+            const input = inputPath.value.trim();
+            const output = outputName.value.trim();
+
+            if (!request || !input) {
+                appendChatMessage('请先提供视频路径并输入处理需求。', 'ai', true);
+                return;
+            }
+
+            closeCurrentEventSource();
+            appendChatMessage(request, 'user');
+            chatInput.value = '';
+            setRunning(true);
+            addLog(`[assistant] request: ${request}`, 'system');
+
+            try {
+                const response = await fetch('/api/run', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        request,
+                        input,
+                        output,
+                        sticker: 'image/image.png'
+                    })
+                });
+
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload.error || '任务启动失败');
+                }
+
+                addLog(`[server] job started: ${payload.jobId}`, 'system');
+                currentEventSource = new EventSource(`/api/events/${encodeURIComponent(payload.jobId)}`);
+
+                currentEventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.kind === 'done') {
+                        addLog(`[success] ${data.message || '处理完成'}`, 'system');
+                        appendChatMessage(`处理完成，视频已生成：${data.output || payload.output}`, 'ai');
+                        if (data.videoUrl) {
+                            setVideoPreview(data.videoUrl);
+                        }
+                        setRunning(false);
+                        closeCurrentEventSource();
+                    } else if (data.kind === 'failed') {
+                        addLog(`[error] ${data.message || data.line || '处理失败'}`, 'error');
+                        appendChatMessage(`处理失败：${data.message || data.line || '请查看终端日志'}`, 'ai', true);
+                        setRunning(false);
+                        closeCurrentEventSource();
+                    } else {
+                        addLog(data.line || '', data.kind === 'stderr' ? 'error' : data.kind);
+                    }
+                };
+
+                currentEventSource.onerror = () => {
+                    addLog('[server] 日志连接已断开。', 'error');
+                    appendChatMessage('日志连接中断，视频预览保持不变。', 'ai', true);
+                    setRunning(false);
+                    closeCurrentEventSource();
+                };
+            } catch (err) {
+                addLog(`[error] ${err.message}`, 'error');
+                appendChatMessage(`任务启动失败：${err.message}`, 'ai', true);
+                setRunning(false);
+            }
+        }
+
+        chatInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendIntent();
+            }
+        });
+
+        setupFileDrop('input-drop');
+        setupFileDrop('video-drop-zone', true);
+        setupFileDrop('chat-box');
+    </script>
+</body>
+</html>
