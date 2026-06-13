@@ -31,7 +31,7 @@ impl Renderer {
 }
 
 pub fn build_subtitles_filter(subtitle_path: &Path, style: &SubtitleStyle) -> String {
-    let mut filter = format!("subtitles={}", escape_filter_path(subtitle_path));
+    let mut filter = format!("subtitles='{}'", escape_filter_path(subtitle_path));
     let mut force_style = Vec::new();
 
     if let Some(font_size) = style.font_size {
@@ -85,7 +85,7 @@ mod tests {
         };
         let filter = build_subtitles_filter(Path::new("tests/test.srt"), &style);
 
-        assert!(filter.contains("subtitles=tests/test.srt"));
+        assert!(filter.contains("subtitles='tests/test.srt'"));
         assert!(filter.contains("Fontsize=32"));
         assert!(filter.contains("Shadow=0"));
         assert!(filter.contains("FontName=NotoSansCJK-Regular"));

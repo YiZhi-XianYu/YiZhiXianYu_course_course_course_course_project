@@ -1,3 +1,6 @@
 /target
 /tools
 /models
+/tests
+*.mp4
+*.srt

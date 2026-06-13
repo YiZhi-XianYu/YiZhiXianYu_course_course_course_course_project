@@ -5,6 +5,7 @@ use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::error::{BurnerError, Result};
+use crate::tool_paths::ffmpeg_path;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AsrOptions {
@@ -77,7 +78,8 @@ pub fn transcribe_video_to_srt(
 
     if dry_run {
         println!(
-            "ffmpeg {}",
+            "{} {}",
+            ffmpeg_path().display(),
             display_args(&extract_audio_args(input, &audio_path))
         );
         println!(
@@ -111,16 +113,12 @@ pub fn transcribe_video_to_srt(
     }
 
     let srt_text = fs::read_to_string(&srt_path)?;
-    let kept_srt = if options.keep_srt {
-        let target = output.with_extension("srt");
-        fs::copy(&srt_path, &target)?;
-        Some(target)
-    } else {
-        None
-    };
+    let stable_srt = output.with_extension("auto.srt");
+    fs::copy(&srt_path, &stable_srt)?;
+    let kept_srt = options.keep_srt.then_some(stable_srt.clone());
 
     Ok(AsrResult {
-        srt_path,
+        srt_path: stable_srt,
         srt_text,
         kept_srt,
     })
@@ -141,7 +139,7 @@ pub fn validate_asr_tools(options: &AsrOptions) -> Result<()> {
 }
 
 fn run_ffmpeg(args: Vec<OsString>) -> Result<()> {
-    let output = Command::new("ffmpeg").args(&args).output();
+    let output = Command::new(ffmpeg_path()).args(&args).output();
     let output = match output {
         Ok(output) => output,
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => {

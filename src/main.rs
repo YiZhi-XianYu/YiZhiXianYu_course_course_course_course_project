@@ -1,5 +1,7 @@
 use std::process::ExitCode;
 
+use subtitle_burner::agent::run_agent;
+use subtitle_burner::assistant::run_assistant;
 use subtitle_burner::cli::{help_text, parse_env, Command};
 use subtitle_burner::companion::run_companion;
 use subtitle_burner::face::run_mosaic;
@@ -34,6 +36,36 @@ fn run() -> subtitle_burner::Result<()> {
             );
             if let Some(srt) = report.generated_srt {
                 println!("generated SRT saved: {}", srt.display());
+            }
+            if report.dry_run {
+                println!("dry-run mode did not generate a video.");
+            }
+            Ok(())
+        }
+        Command::Agent(options) => {
+            let report = run_agent(*options)?;
+            println!(
+                "agent workflow complete: {} steps, output {}",
+                report.steps.len(),
+                report.output.display()
+            );
+            for (index, step) in report.steps.iter().enumerate() {
+                println!("  step {}: {:?}", index + 1, step);
+            }
+            if report.dry_run {
+                println!("dry-run mode did not generate a video.");
+            }
+            Ok(())
+        }
+        Command::Assistant(options) => {
+            let report = run_assistant(*options)?;
+            println!(
+                "assistant workflow complete: {} steps, output {}",
+                report.steps.len(),
+                report.output.display()
+            );
+            for (index, step) in report.steps.iter().enumerate() {
+                println!("  step {}: {:?}", index + 1, step);
             }
             if report.dry_run {
                 println!("dry-run mode did not generate a video.");

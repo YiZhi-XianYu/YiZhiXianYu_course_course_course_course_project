@@ -2,6 +2,7 @@ use std::ffi::OsString;
 use std::process::Command;
 
 use crate::error::{BurnerError, Result};
+use crate::tool_paths::ffmpeg_path;
 
 use super::RenderedJob;
 
@@ -15,14 +16,14 @@ pub fn encode_with_ffmpeg(job: &RenderedJob) -> Result<EncoderReport> {
     let args = build_ffmpeg_args(job);
 
     if job.dry_run {
-        println!("ffmpeg {}", display_args(&args));
+        println!("{} {}", ffmpeg_path().display(), display_args(&args));
         return Ok(EncoderReport {
             subtitle_count: job.track.len(),
             args,
         });
     }
 
-    let output = Command::new("ffmpeg").args(&args).output();
+    let output = Command::new(ffmpeg_path()).args(&args).output();
     let output = match output {
         Ok(output) => output,
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => {

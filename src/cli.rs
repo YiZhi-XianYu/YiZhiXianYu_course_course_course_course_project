@@ -1,7 +1,9 @@
 use std::env;
 use std::path::PathBuf;
 
+use crate::agent::{AgentGoal, AgentOptions};
 use crate::asr::{AsrLanguage, AsrOptions};
+use crate::assistant::AssistantOptions;
 use crate::companion::CompanionOptions;
 use crate::error::{BurnerError, Result};
 use crate::face::MosaicOptions;
@@ -10,6 +12,8 @@ use crate::pipeline::{BurnOptions, SubtitleStyle};
 #[derive(Debug, Clone, PartialEq)]
 pub enum Command {
     Burn(Box<BurnOptions>),
+    Agent(Box<AgentOptions>),
+    Assistant(Box<AssistantOptions>),
     Mosaic(Box<MosaicOptions>),
     Companion(Box<CompanionOptions>),
     Help,
@@ -31,6 +35,14 @@ where
     }
 
     match args.first().map(String::as_str) {
+        Some("agent") => {
+            args.remove(0);
+            parse_agent_args(args)
+        }
+        Some("assistant" | "chat") => {
+            args.remove(0);
+            parse_assistant_args(args)
+        }
         Some("mosaic") => {
             args.remove(0);
             parse_mosaic_args(args)
@@ -146,6 +158,122 @@ fn parse_burn_args(args: Vec<String>) -> Result<Command> {
             shadow: !no_shadow,
         },
         auto_subtitle,
+        verbose,
+        dry_run,
+    })))
+}
+
+fn parse_agent_args(args: Vec<String>) -> Result<Command> {
+    let mut input = None;
+    let mut output = None;
+    let mut goal = AgentGoal::Isekai;
+    let mut sticker = None;
+    let mut subtitle = None;
+    let mut language = AsrLanguage::Auto;
+    let mut keep_srt = false;
+    let mut verbose = false;
+    let mut dry_run = false;
+
+    let mut iter = args.into_iter();
+    while let Some(arg) = iter.next() {
+        match arg.as_str() {
+            "-h" | "--help" => return Ok(Command::Help),
+            "-i" | "--input" => input = Some(next_value(&mut iter, "--input")?),
+            "-o" | "--output" => output = Some(next_value(&mut iter, "--output")?),
+            "--goal" => {
+                let value = next_value(&mut iter, "--goal")?;
+                goal = AgentGoal::parse(&value)?;
+            }
+            "--sticker" => sticker = Some(PathBuf::from(next_value(&mut iter, "--sticker")?)),
+            "-s" | "--subtitle" => {
+                subtitle = Some(PathBuf::from(next_value(&mut iter, "--subtitle")?));
+            }
+            "--language" => {
+                let value = next_value(&mut iter, "--language")?;
+                language = AsrLanguage::parse(&value)?;
+            }
+            "--keep-srt" => keep_srt = true,
+            "-v" | "--verbose" => verbose = true,
+            "--dry-run" => dry_run = true,
+            unknown if unknown.starts_with('-') => {
+                return Err(BurnerError::InvalidArguments {
+                    message: format!("unknown option: {unknown}"),
+                });
+            }
+            positional => {
+                return Err(BurnerError::InvalidArguments {
+                    message: format!("unsupported positional argument: {positional}"),
+                });
+            }
+        }
+    }
+
+    Ok(Command::Agent(Box::new(AgentOptions {
+        input: required_path(input, "--input")?,
+        output: required_path(output, "--output")?,
+        goal,
+        custom_steps: None,
+        sticker,
+        subtitle,
+        language,
+        keep_srt,
+        verbose,
+        dry_run,
+    })))
+}
+
+fn parse_assistant_args(args: Vec<String>) -> Result<Command> {
+    let mut request = None;
+    let mut input = None;
+    let mut output = None;
+    let mut sticker = None;
+    let mut subtitle = None;
+    let mut language = AsrLanguage::Auto;
+    let mut keep_srt = false;
+    let mut verbose = false;
+    let mut dry_run = false;
+
+    let mut iter = args.into_iter();
+    while let Some(arg) = iter.next() {
+        match arg.as_str() {
+            "-h" | "--help" => return Ok(Command::Help),
+            "--ask" | "--request" | "-q" => request = Some(next_value(&mut iter, "--ask")?),
+            "-i" | "--input" => input = Some(next_value(&mut iter, "--input")?),
+            "-o" | "--output" => output = Some(PathBuf::from(next_value(&mut iter, "--output")?)),
+            "--sticker" => sticker = Some(PathBuf::from(next_value(&mut iter, "--sticker")?)),
+            "-s" | "--subtitle" => {
+                subtitle = Some(PathBuf::from(next_value(&mut iter, "--subtitle")?));
+            }
+            "--language" => {
+                let value = next_value(&mut iter, "--language")?;
+                language = AsrLanguage::parse(&value)?;
+            }
+            "--keep-srt" => keep_srt = true,
+            "-v" | "--verbose" => verbose = true,
+            "--dry-run" => dry_run = true,
+            unknown if unknown.starts_with('-') => {
+                return Err(BurnerError::InvalidArguments {
+                    message: format!("unknown option: {unknown}"),
+                });
+            }
+            positional => {
+                return Err(BurnerError::InvalidArguments {
+                    message: format!("unsupported positional argument: {positional}"),
+                });
+            }
+        }
+    }
+
+    Ok(Command::Assistant(Box::new(AssistantOptions {
+        request: request.ok_or_else(|| BurnerError::InvalidArguments {
+            message: "missing --ask <TEXT>".to_string(),
+        })?,
+        input: required_path(input, "--input")?,
+        output,
+        sticker,
+        subtitle,
+        language,
+        keep_srt,
         verbose,
         dry_run,
     })))
@@ -357,6 +485,8 @@ pub fn help_text() -> &'static str {
         "Usage:\n",
         "  subtitle-burner --input <INPUT> --subtitle <SUBTITLE> --output <OUTPUT> [OPTIONS]\n",
         "  subtitle-burner --input <INPUT> --output <OUTPUT> --auto-subtitle [OPTIONS]\n",
+        "  subtitle-burner agent --input <INPUT> --output <OUTPUT> --goal <GOAL> [OPTIONS]\n",
+        "  subtitle-burner assistant --ask <TEXT> --input <INPUT> [OPTIONS]\n",
         "  subtitle-burner mosaic --input <INPUT> --output <OUTPUT> [OPTIONS]\n\n",
         "  subtitle-burner companion --input <INPUT> --sticker <PNG> --output <OUTPUT> [OPTIONS]\n\n",
         "Subtitle options:\n",
@@ -372,6 +502,18 @@ pub fn help_text() -> &'static str {
         "      --font-size <SIZE>     Subtitle font size\n",
         "      --no-shadow            Disable subtitle shadow\n",
         "      --dry-run              Print commands without executing\n\n",
+        "Assistant options:\n",
+        "      --ask <TEXT>           Natural language request in Chinese\n",
+        "      --sticker <PNG>        Optional sticker for isekai/companion requests\n",
+        "  -s, --subtitle <SRT>       Optional existing SRT for subtitle requests\n",
+        "      --language <LANG>      ASR language when subtitles are missing\n",
+        "      --keep-srt             Keep generated SRT file\n\n",
+        "Agent options:\n",
+        "      --goal <GOAL>          Agent goal: isekai, privacy, subtitle [default: isekai]\n",
+        "      --sticker <PNG>        Companion sticker used by isekai goal\n",
+        "  -s, --subtitle <SRT>       Optional existing SRT for subtitle steps\n",
+        "      --language <LANG>      ASR language when subtitles are missing\n",
+        "      --keep-srt             Keep generated SRT file\n\n",
         "Mosaic options:\n",
         "      --python <PYTHON>      Python executable [default: C:/software/Anaconda/envs/cv_env/python.exe]\n",
         "      --ffmpeg <FFMPEG>      FFmpeg executable path\n",
@@ -451,6 +593,62 @@ mod tests {
                 assert!(asr.keep_srt);
             }
             _ => panic!("expected burn command"),
+        }
+    }
+
+    #[test]
+    fn parse_agent_options() {
+        let cmd = parse_args([
+            "agent",
+            "--input",
+            "in.mp4",
+            "--output",
+            "out.mp4",
+            "--goal",
+            "isekai",
+            "--sticker",
+            "image/image.png",
+            "--language",
+            "zh",
+            "--keep-srt",
+        ])
+        .unwrap();
+
+        match cmd {
+            Command::Agent(options) => {
+                assert_eq!(options.input, PathBuf::from("in.mp4"));
+                assert_eq!(options.output, PathBuf::from("out.mp4"));
+                assert_eq!(options.goal, AgentGoal::Isekai);
+                assert_eq!(options.sticker, Some(PathBuf::from("image/image.png")));
+                assert_eq!(options.language, AsrLanguage::Chinese);
+                assert!(options.keep_srt);
+            }
+            _ => panic!("expected agent command"),
+        }
+    }
+
+    #[test]
+    fn parse_assistant_options() {
+        let cmd = parse_args([
+            "assistant",
+            "--ask",
+            "请给视频加字幕",
+            "--input",
+            "in.mp4",
+            "--output",
+            "out.mp4",
+            "--dry-run",
+        ])
+        .unwrap();
+
+        match cmd {
+            Command::Assistant(options) => {
+                assert_eq!(options.request, "请给视频加字幕");
+                assert_eq!(options.input, PathBuf::from("in.mp4"));
+                assert_eq!(options.output, Some(PathBuf::from("out.mp4")));
+                assert!(options.dry_run);
+            }
+            _ => panic!("expected assistant command"),
         }
     }
 

@@ -99,3 +99,35 @@ cargo test
 ## 不足与改进方向
 
 当前版本通过 FFmpeg 命令完成最终编码，并通过 whisper.cpp 完成自动语音识别，优点是跨平台配置简单，缺点是没有直接在 Rust 内部操作视频帧或执行模型推理。后续可接入 `ffmpeg-next`，实现真正的帧级解码、字幕绘制和编码，并扩展多线程渲染池、进度条、批量处理和字幕人工校对功能。
+
+## Agent 体系结构扩展
+
+为了满足软件体系结构课程中“智能体系统体系结构设计与 Demo 实现”的要求，项目新增了“异世界相机 Agent”编排层。
+
+Agent 的基本行为模型是：
+
+```text
+Perception -> Planning -> Tool Execution -> Video Output
+```
+
+感知阶段会判断输入视频、贴纸、字幕和用户目标。规划阶段会根据目标生成步骤序列，例如 `isekai` 目标会规划为 `Companion -> AutoSubtitleBurn`，`privacy` 目标会规划为 `Mosaic`。执行阶段复用已有工具模块完成视频处理。
+
+可以在体系结构文档中将其描述为：
+
+- 体系风格：管道-过滤器风格 + 分层架构 + Agent 控制器
+- Agent 设计模式：Sense-Plan-Act、Tool-Using Agent
+- 逻辑视图：AgentController、Perception、Planner、ToolExecutor、VideoTools
+- 进程视图：Agent 主控进程调度 FFmpeg、whisper.cpp、OpenCV Python 脚本
+- 场景视图：用户选择 `isekai` 目标后，Agent 自动添加头顶伙伴并生成字幕烧录输出
+
+## 中文聊天助手扩展
+
+项目在 Agent 控制器之上增加了本地规则版中文聊天助手。它通过关键词识别用户自然语言需求，例如“打码”“马赛克”“字幕”“异世界”“蜡笔小新”“头顶”等，并将请求转换为 Agent 目标。
+
+该模块可作为后续前端页面的自然语言入口：
+
+```text
+用户输入中文需求 -> Assistant 理解意图 -> Agent 规划工作流 -> 视频处理工具执行
+```
+
+它不依赖网络和云端大模型，适合课程 Demo 稳定演示。

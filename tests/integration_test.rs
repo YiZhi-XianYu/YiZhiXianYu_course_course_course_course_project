@@ -62,7 +62,7 @@ fn test_ffmpeg_filter_generation() {
 
     let filter = build_subtitles_filter(Path::new("tests/test.srt"), &style);
 
-    assert!(filter.starts_with("subtitles=tests/test.srt"));
+    assert!(filter.starts_with("subtitles='tests/test.srt'"));
     assert!(filter.contains("Fontsize=24"));
     assert!(filter.contains("Shadow=1"));
 }

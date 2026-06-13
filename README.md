@@ -194,3 +194,69 @@ Options:
 ## 备注
 
 当前实现选择运行时调用 FFmpeg 命令，而不是直接链接 `ffmpeg-next`。原因是 Windows 下 FFmpeg 开发库和 pkg-config 配置容易影响课程验收编译。这样可以保证 Rust 核心代码、SRT 解析、流水线调度和测试在干净环境中稳定通过，同时仍然能在安装 FFmpeg 后完成真实视频字幕烧录。
+
+## Agent 自动工作流
+
+为了支持软件体系结构课程的 Agent 系统主题，项目新增了 `agent` 子命令。它在现有视频处理工具之上增加一个控制层，按 `感知 -> 规划 -> 执行` 的方式自动组合字幕、马赛克和头顶伙伴等能力。
+
+示例：
+
+```powershell
+target\release\subtitle-burner.exe agent `
+  --input test.mp4 `
+  --output agent_isekai.mp4 `
+  --goal isekai `
+  --sticker image\image.png `
+  --language auto `
+  --keep-srt `
+  --verbose
+```
+
+可选目标：
+
+```text
+isekai   添加头顶伙伴，并在没有字幕时自动生成字幕后烧录
+privacy  自动给人脸打马赛克
+subtitle 自动生成或烧录字幕
+```
+
+Agent dry-run 可以展示感知结果和执行计划：
+
+```powershell
+target\release\subtitle-burner.exe agent `
+  --input test.mp4 `
+  --output agent_isekai.mp4 `
+  --goal isekai `
+  --sticker image\image.png `
+  --dry-run `
+  --verbose
+```
+
+输出中会包含类似：
+
+```text
+[agent] perception: ...
+[agent] plan: [Companion, AutoSubtitleBurn]
+```
+
+## 中文聊天助手
+
+`assistant` 子命令提供一个本地规则版中文聊天助手。它不联网、不调用大模型，而是通过关键词理解用户需求，并把自然语言请求转换为 Agent 工作流。
+
+示例：
+
+```powershell
+target\release\subtitle-burner.exe assistant `
+  --ask "让蜡笔小新趴在人物头顶，做成异世界效果" `
+  --input test.mp4 `
+  --output chat_isekai.mp4 `
+  --sticker image\image.png `
+  --verbose
+```
+
+其他示例：
+
+```powershell
+target\release\subtitle-burner.exe assistant --ask "请给视频里的人脸打马赛克保护隐私" --input test.mp4 --output privacy.mp4
+target\release\subtitle-burner.exe assistant --ask "请自动识别语音并给视频烧录字幕" --input test.mp4 --output subtitle.mp4
+```
