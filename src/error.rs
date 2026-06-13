@@ -14,6 +14,9 @@ pub enum BurnerError {
     SrtParseError { line: usize, reason: String },
     FfmpegNotFound,
     FfmpegFailed { code: Option<i32>, stderr: String },
+    WhisperNotFound { path: PathBuf },
+    WhisperFailed { code: Option<i32>, stderr: String },
+    AsrOutputMissing { path: PathBuf },
     PipelineClosed { stage: &'static str },
     ThreadPanicked { stage: &'static str },
     Io(io::Error),
@@ -41,6 +44,15 @@ impl Display for BurnerError {
             ),
             Self::FfmpegFailed { code, stderr } => {
                 write!(f, "FFmpeg 执行失败，退出码: {code:?}\n{stderr}")
+            }
+            Self::WhisperNotFound { path } => {
+                write!(f, "未找到 whisper.cpp 可执行文件: {}", path.display())
+            }
+            Self::WhisperFailed { code, stderr } => {
+                write!(f, "whisper.cpp 执行失败，退出码: {code:?}\n{stderr}")
+            }
+            Self::AsrOutputMissing { path } => {
+                write!(f, "语音识别未生成 SRT 文件: {}", path.display())
             }
             Self::PipelineClosed { stage } => write!(f, "流水线阶段提前关闭: {stage}"),
             Self::ThreadPanicked { stage } => write!(f, "流水线线程异常退出: {stage}"),

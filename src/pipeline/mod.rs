@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use std::sync::mpsc;
 use std::thread;
 
+use crate::asr::AsrOptions;
 use crate::error::{BurnerError, Result};
 use crate::subtitle::{parse_srt, SubtitleTrack};
 
@@ -33,9 +34,10 @@ impl Default for SubtitleStyle {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BurnOptions {
     pub input: PathBuf,
-    pub subtitle: PathBuf,
+    pub subtitle: Option<PathBuf>,
     pub output: PathBuf,
     pub style: SubtitleStyle,
+    pub auto_subtitle: Option<AsrOptions>,
     pub verbose: bool,
     pub dry_run: bool,
 }
@@ -45,6 +47,7 @@ pub struct PipelineReport {
     pub subtitle_count: usize,
     pub output: PathBuf,
     pub dry_run: bool,
+    pub generated_srt: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,6 +56,7 @@ pub struct VideoPacket {
     pub subtitle: PathBuf,
     pub output: PathBuf,
     pub subtitle_text: String,
+    pub generated_srt: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -104,6 +108,7 @@ pub fn run_burn_pipeline(options: BurnOptions) -> Result<PipelineReport> {
             subtitle_count: ffmpeg_result.subtitle_count,
             output: options.output.clone(),
             dry_run: options.dry_run,
+            generated_srt: job.packet.generated_srt.clone(),
         });
     }
 
@@ -132,10 +137,26 @@ fn validate_paths(options: &BurnOptions) -> Result<()> {
             path: options.input.clone(),
         });
     }
-    if !options.subtitle.is_file() {
-        return Err(BurnerError::SubtitleNotFound {
-            path: options.subtitle.clone(),
-        });
+
+    match (&options.subtitle, &options.auto_subtitle) {
+        (Some(subtitle), None) => {
+            if !subtitle.is_file() {
+                return Err(BurnerError::SubtitleNotFound {
+                    path: subtitle.clone(),
+                });
+            }
+        }
+        (None, Some(asr)) => crate::asr::validate_asr_tools(asr)?,
+        (Some(_), Some(_)) => {
+            return Err(BurnerError::InvalidArguments {
+                message: "--subtitle 和 --auto-subtitle 不能同时使用".to_string(),
+            });
+        }
+        (None, None) => {
+            return Err(BurnerError::InvalidArguments {
+                message: "必须提供 --subtitle，或使用 --auto-subtitle 自动识别".to_string(),
+            });
+        }
     }
     if let Some(parent) = options.output.parent() {
         if !parent.as_os_str().is_empty() && !parent.exists() {

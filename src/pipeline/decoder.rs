@@ -5,12 +5,31 @@ use crate::error::Result;
 use super::{BurnOptions, VideoPacket};
 
 pub fn decode_request(options: &BurnOptions) -> Result<VideoPacket> {
-    let subtitle_text = fs::read_to_string(&options.subtitle)?;
+    let (subtitle, subtitle_text, generated_srt) = if let Some(asr) = &options.auto_subtitle {
+        let result = crate::asr::transcribe_video_to_srt(
+            &options.input,
+            &options.output,
+            asr,
+            options.dry_run,
+            options.verbose,
+        )?;
+        let subtitle_path = result.kept_srt.clone().unwrap_or(result.srt_path);
+        (subtitle_path, result.srt_text, result.kept_srt)
+    } else {
+        let subtitle = options
+            .subtitle
+            .clone()
+            .expect("subtitle path is validated before decoder starts");
+        let subtitle_text = fs::read_to_string(&subtitle)?;
+        (subtitle, subtitle_text, None)
+    };
+
     Ok(VideoPacket {
         input: options.input.clone(),
-        subtitle: options.subtitle.clone(),
+        subtitle,
         output: options.output.clone(),
         subtitle_text,
+        generated_srt,
     })
 }
 
@@ -33,9 +52,10 @@ mod tests {
 
         let options = BurnOptions {
             input: PathBuf::from("input.mp4"),
-            subtitle: subtitle.clone(),
+            subtitle: Some(subtitle.clone()),
             output: PathBuf::from("output.mp4"),
             style: SubtitleStyle::default(),
+            auto_subtitle: None,
             verbose: false,
             dry_run: true,
         };

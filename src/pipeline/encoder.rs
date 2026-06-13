@@ -106,6 +106,7 @@ mod tests {
                 subtitle: PathBuf::from("a.srt"),
                 output: PathBuf::from("out.mp4"),
                 subtitle_text: String::new(),
+                generated_srt: None,
             },
             track: SubtitleTrack::new(vec![SubtitleEntry {
                 index: 1,

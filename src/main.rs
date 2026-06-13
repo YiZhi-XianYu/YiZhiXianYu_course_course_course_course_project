@@ -24,12 +24,15 @@ fn run() -> subtitle_burner::Result<()> {
             Ok(())
         }
         Command::Burn(options) => {
-            let report = run_burn_pipeline(options)?;
+            let report = run_burn_pipeline(*options)?;
             println!(
                 "处理完成: {} 条字幕，输出 {}",
                 report.subtitle_count,
                 report.output.display()
             );
+            if let Some(srt) = report.generated_srt {
+                println!("自动生成字幕已保存: {}", srt.display());
+            }
             if report.dry_run {
                 println!("dry-run 模式未生成实际视频。");
             }

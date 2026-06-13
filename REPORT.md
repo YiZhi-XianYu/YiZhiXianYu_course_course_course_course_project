@@ -11,19 +11,23 @@
 
 本项目实现一个 CLI 工具，将 `.srt` 字幕文件烧录到视频画面中，生成带硬字幕的新视频。项目重点不只是调用外部程序，而是围绕字幕解析、参数校验、滤镜生成、错误处理和三阶段并发流水线组织完整工程。
 
+扩展版本还支持自动识别视频中的中英文语音：程序先提取视频音频，再调用本地 whisper.cpp 模型生成 SRT，最后复用原有字幕烧录流程。
+
 ## 主要功能
 
 1. 解析 SRT 字幕文件
 2. 支持中文、多行字幕、毫秒级时间戳和 HTML 标签剥离
 3. 生成 FFmpeg subtitles 滤镜
 4. 调用 FFmpeg 完成视频硬字幕烧录
-5. 使用线程和有界 channel 连接 Decoder、Renderer、Encoder 三个阶段
-6. 提供 dry-run 模式预览命令
-7. 提供单元测试和集成测试
+5. 自动提取音频并使用 whisper.cpp 生成中英文字幕
+6. 使用线程和有界 channel 连接 Decoder、Renderer、Encoder 三个阶段
+7. 提供 dry-run 模式预览命令
+8. 提供单元测试和集成测试
 
 ## 模块划分
 
 - `cli`：解析命令行参数，生成 `BurnOptions`
+- `asr`：管理自动语音识别，调用 FFmpeg 和 whisper.cpp
 - `error`：定义统一错误枚举 `BurnerError`
 - `subtitle`：解析 SRT，构建 `SubtitleTrack`
 - `pipeline`：组织三阶段流水线
@@ -46,7 +50,7 @@
 Decoder thread -> channel(32) -> Renderer thread -> channel(32) -> Encoder
 ```
 
-Decoder 阶段负责读取字幕文件并打包任务。Renderer 阶段负责解析字幕和生成滤镜计划。Encoder 阶段负责调用 FFmpeg 输出视频。使用有界 channel 可以避免前序阶段无限制地产生任务，体现实际视频处理系统中的背压思想。
+Decoder 阶段负责读取字幕文件并打包任务；在自动字幕模式下，它会先调用 FFmpeg 提取音频，再调用 whisper.cpp 生成 SRT。Renderer 阶段负责解析字幕和生成滤镜计划。Encoder 阶段负责调用 FFmpeg 输出视频。使用有界 channel 可以避免前序阶段无限制地产生任务，体现实际视频处理系统中的背压思想。
 
 ## Rust 特性说明
 
@@ -69,6 +73,8 @@ Decoder 阶段负责读取字幕文件并打包任务。Renderer 阶段负责解
 - 按时间戳查询字幕
 - FFmpeg 滤镜生成
 - CLI 参数解析
+- ASR 语言参数解析
+- whisper.cpp 默认路径配置
 
 运行方式：
 
@@ -92,4 +98,4 @@ cargo test
 
 ## 不足与改进方向
 
-当前版本通过 FFmpeg 命令完成最终编码，优点是跨平台配置简单，缺点是没有直接在 Rust 内部操作视频帧。后续可接入 `ffmpeg-next`，实现真正的帧级解码、字幕绘制和编码，并扩展多线程渲染池、进度条和批量处理功能。
+当前版本通过 FFmpeg 命令完成最终编码，并通过 whisper.cpp 完成自动语音识别，优点是跨平台配置简单，缺点是没有直接在 Rust 内部操作视频帧或执行模型推理。后续可接入 `ffmpeg-next`，实现真正的帧级解码、字幕绘制和编码，并扩展多线程渲染池、进度条、批量处理和字幕人工校对功能。
